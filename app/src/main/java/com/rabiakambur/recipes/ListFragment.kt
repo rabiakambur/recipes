@@ -6,6 +6,9 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.rabiakambur.ListRecyclerAdapter
 import com.rabiakambur.recipes.databinding.FragmentListBinding
 import com.rabiakambur.recipes.databinding.FragmentRecipeBinding
 
@@ -17,6 +20,7 @@ class ListFragment : Fragment() {
 
     var foodNameList = ArrayList<String>()
     var foodIdList = ArrayList<Int>()
+    private lateinit var listAdapter : ListRecyclerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,6 +38,10 @@ class ListFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        listAdapter = ListRecyclerAdapter(foodNameList, foodIdList)
+        binding.recyclerView.layoutManager = LinearLayoutManager(context)
+        binding.recyclerView.adapter = listAdapter
 
         sqlDataRetrieval()
     }
@@ -54,10 +62,13 @@ class ListFragment : Fragment() {
                     foodNameList.add(cursor.getString(foodNameIndex))
                     foodIdList.add(cursor.getInt(foodIdIndex))
                 }
+
+                listAdapter.notifyDataSetChanged()
+
                 cursor.close()
             }
         }catch (e: Exception){
-
+            e.printStackTrace()
         }
     }
 }

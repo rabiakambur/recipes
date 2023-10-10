@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
@@ -50,7 +51,7 @@ class RecipeFragment : Fragment() {
             val foodName = binding.foodNameText.text.toString()
             val foodMaterials = binding.foodMaterialText.text.toString()
 
-            if (selectedBitmap != null){
+            if (selectedBitmap != null) {
                 val smallBitmap = createSmallBitmap(selectedBitmap!!, 300)
 
                 val outputStream = ByteArrayOutputStream()
@@ -59,19 +60,20 @@ class RecipeFragment : Fragment() {
 
                 try {
                     context?.let {
-                        val database = it.openOrCreateDatabase("Foods",Context.MODE_PRIVATE, null)
+                        val database = it.openOrCreateDatabase("Foods", Context.MODE_PRIVATE, null)
                         database.execSQL("CREATE TABLE IF NOT EXISTS foods (id INTEGER PRIMARY KEY, foodName VARCHAR,foodIngredients VARCHAR, image BLOB)")
 
-                        val sqlString = "INSERT INTO foods(foodName, foodIngredients, image) VALUES (?, ?, ?)"
+                        val sqlString =
+                            "INSERT INTO foods(foodName, foodIngredients, image) VALUES (?, ?, ?)"
 
                         val steatement = database.compileStatement(sqlString)
-                        steatement.bindString(1,foodName)
+                        steatement.bindString(1, foodName)
                         steatement.bindString(2, foodMaterials)
                         steatement.bindBlob(3, byteArray)
                         steatement.execute()
                     }
 
-                }catch (e: Exception){
+                } catch (e: Exception) {
                     e.printStackTrace()
                 }
                 val action = RecipeFragmentDirections.actionRecipeFragmentToListFragment()
@@ -82,8 +84,13 @@ class RecipeFragment : Fragment() {
         binding.imageView.setOnClickListener {
 
             activity?.let {
-                if (ContextCompat.checkSelfPermission(it.applicationContext, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), 1)
+                val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
+                    Manifest.permission.READ_MEDIA_IMAGES
+                }else{
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                }
+                if (ContextCompat.checkSelfPermission(it.applicationContext, permission) != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(arrayOf(permission), 1)
                 }else {
                     val galleryIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
                     startActivityForResult(galleryIntent, 2)
@@ -93,6 +100,47 @@ class RecipeFragment : Fragment() {
 
 
 
+        }
+        arguments?.let {
+            val incomingInformation = RecipeFragmentArgs.fromBundle(it).information
+
+            if (incomingInformation.equals("fromthemenu")){
+                binding.foodNameText.setText("")
+                binding.foodMaterialText.setText("")
+                binding.button.visibility = View.VISIBLE
+
+                val imageSelectionBackgroundPlan = BitmapFactory.decodeResource(context?.resources, R.drawable.image)
+                binding.imageView.setImageBitmap(imageSelectionBackgroundPlan)
+            }else{
+                binding.button.visibility = View.INVISIBLE
+
+                val chosenId = RecipeFragmentArgs.fromBundle(it).id
+
+                context?.let {
+                    try {
+                        val database = it.openOrCreateDatabase("Foods", Context.MODE_PRIVATE, null)
+                        val cursor = database.rawQuery("SELECT * FROM foods WHERE id = ?", arrayOf(chosenId.toString()))
+
+                        val foodNameIndex = cursor.getColumnIndex("foodName")
+                        val foodIngredientsIndex = cursor.getColumnIndex("foodIngredients")
+                        val foodImage = cursor.getColumnIndex("image")
+
+                        while (cursor.moveToNext()){
+                            binding.foodNameText.setText(cursor.getString(foodNameIndex))
+                            binding.foodMaterialText.setText(cursor.getString(foodIngredientsIndex))
+
+                            val byteArray = cursor.getBlob(foodImage)
+                            val bitmap = BitmapFactory.decodeByteArray(byteArray,0,byteArray.size)
+                            binding.imageView.setImageBitmap(bitmap)
+                        }
+
+                        cursor.close()
+
+                    }catch (e: Exception){
+                        e.printStackTrace()
+                    }
+                }
+            }
         }
     }
 
