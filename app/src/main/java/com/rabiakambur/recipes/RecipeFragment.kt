@@ -2,6 +2,7 @@ package com.rabiakambur.recipes
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -17,6 +18,7 @@ import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.navigation.Navigation
 import com.rabiakambur.recipes.databinding.FragmentRecipeBinding
+import java.io.ByteArrayOutputStream
 
 
 class RecipeFragment : Fragment() {
@@ -45,7 +47,36 @@ class RecipeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.button.setOnClickListener {
+            val foodName = binding.foodNameText.text.toString()
+            val foodMaterials = binding.foodMaterialText.text.toString()
 
+            if (selectedBitmap != null){
+                val smallBitmap = createSmallBitmap(selectedBitmap!!, 300)
+
+                val outputStream = ByteArrayOutputStream()
+                smallBitmap.compress(Bitmap.CompressFormat.PNG, 50, outputStream)
+                val byteArray = outputStream.toByteArray()
+
+                try {
+                    context?.let {
+                        val database = it.openOrCreateDatabase("Foods",Context.MODE_PRIVATE, null)
+                        database.execSQL("CREATE TABLE IF NOT EXISTS foods (id INTEGER PRIMARY KEY, foodName VARCHAR,foodIngredients VARCHAR, image BLOB)")
+
+                        val sqlString = "INSERT INTO foods(foodName, foodIngredients, image) VALUES (?, ?, ?)"
+
+                        val steatement = database.compileStatement(sqlString)
+                        steatement.bindString(1,foodName)
+                        steatement.bindString(2, foodMaterials)
+                        steatement.bindBlob(3, byteArray)
+                        steatement.execute()
+                    }
+
+                }catch (e: Exception){
+                    e.printStackTrace()
+                }
+                val action = RecipeFragmentDirections.actionRecipeFragmentToListFragment()
+                Navigation.findNavController(view).navigate(action)
+            }
         }
 
         binding.imageView.setOnClickListener {
@@ -84,7 +115,7 @@ class RecipeFragment : Fragment() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
 
-        if (requestCode == 2 && requestCode == Activity.RESULT_OK && data != null){
+        if (requestCode == 2 && resultCode == Activity.RESULT_OK && data != null){
             selectedImage = data.data
 
             try {
@@ -108,6 +139,25 @@ class RecipeFragment : Fragment() {
         }
 
         super.onActivityResult(requestCode, resultCode, data)
+    }
+
+    fun createSmallBitmap(userSelectedBitmap : Bitmap, maxSize: Int) : Bitmap {
+        var width = userSelectedBitmap.width
+        var height = userSelectedBitmap.height
+
+        val bitmapRate : Double = width.toDouble() / height.toDouble()
+
+        if (bitmapRate > 1){
+            width = maxSize
+            val shortenedHeight = width / bitmapRate
+            height = shortenedHeight.toInt()
+        }else {
+            height = maxSize
+            val shortenedWidth = height * bitmapRate
+            width = shortenedWidth.toInt()
+        }
+
+        return Bitmap.createScaledBitmap(userSelectedBitmap,width, height, true)
     }
 
 }
