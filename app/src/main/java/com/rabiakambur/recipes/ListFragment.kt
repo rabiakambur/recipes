@@ -18,15 +18,9 @@ class ListFragment : Fragment() {
 
     private val binding get() = _binding!!
 
-    var foodNameList = ArrayList<String>()
-    var foodIdList = ArrayList<Int>()
-    private lateinit var listAdapter : ListRecyclerAdapter
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-
-    }
+    private var foodNameList = ArrayList<String>()
+    private var foodIdList = ArrayList<Int>()
+    private lateinit var listAdapter: ListRecyclerAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -46,28 +40,26 @@ class ListFragment : Fragment() {
         sqlDataRetrieval()
     }
 
-    fun sqlDataRetrieval(){
+    private fun sqlDataRetrieval() {
         try {
-            activity?.let {
-                val database = it.openOrCreateDatabase("Foods", Context.MODE_PRIVATE, null)
+            val database =
+                requireActivity().openOrCreateDatabase("Foods", Context.MODE_PRIVATE, null)
 
-                val cursor = database.rawQuery("SELECT * FROM foods", null)
-                val foodNameIndex = cursor.getColumnIndex("foodName")
-                val foodIdIndex = cursor.getColumnIndex("id")
+            val cursor = database.rawQuery("SELECT * FROM foods", null)
+            val foodNameIndex = cursor.getColumnIndex("foodName")
+            val foodIdIndex = cursor.getColumnIndex("id")
 
-                foodNameList.clear()
-                foodIdList.clear()
+            foodNameList.clear()
+            foodIdList.clear()
 
-                while (cursor.moveToNext()){
-                    foodNameList.add(cursor.getString(foodNameIndex))
-                    foodIdList.add(cursor.getInt(foodIdIndex))
-                }
-
-                listAdapter.notifyDataSetChanged()
-
-                cursor.close()
+            while (cursor.moveToNext()) {
+                foodNameList.add(cursor.getString(foodNameIndex))
+                foodIdList.add(cursor.getInt(foodIdIndex))
             }
-        }catch (e: Exception){
+            listAdapter.notifyDataSetChanged()
+            cursor.close()
+
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }

@@ -1,23 +1,21 @@
 package com.rabiakambur
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.navigation.Navigation
 import androidx.recyclerview.widget.RecyclerView
 import com.rabiakambur.recipes.ListFragmentDirections
-import com.rabiakambur.recipes.R
+import com.rabiakambur.recipes.databinding.RecyclerRowBinding
 
-class ListRecyclerAdapter (val foodList: ArrayList<String>, val idList : ArrayList<Int>) : RecyclerView.Adapter<ListRecyclerAdapter.FoodHolder>() {
-    class FoodHolder (itemView : View) : RecyclerView.ViewHolder(itemView){
-
-    }
+class ListRecyclerAdapter(
+    private val foodList: ArrayList<String>,
+    private val idList: ArrayList<Int>
+) : RecyclerView.Adapter<ListRecyclerAdapter.FoodHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FoodHolder {
         val inflater = LayoutInflater.from(parent.context)
-        val view = inflater.inflate(R.layout.recycler_row, parent,false)
-        return FoodHolder(view)
+        val binding = RecyclerRowBinding.inflate(inflater, parent, false)
+        return FoodHolder(binding)
     }
 
     override fun getItemCount(): Int {
@@ -25,10 +23,23 @@ class ListRecyclerAdapter (val foodList: ArrayList<String>, val idList : ArrayLi
     }
 
     override fun onBindViewHolder(holder: FoodHolder, position: Int) {
-        holder.itemView.findViewById<TextView>(R.id.recycler_row_text).text = foodList[position]
-        holder.itemView.setOnClickListener {
-            val action = ListFragmentDirections.actionListFragmentToRecipeFragment("fromtherecycler", idList[position])
-            Navigation.findNavController(it).navigate(action)
+        holder.bind(foodList[position])
+    }
+
+    inner class FoodHolder(private val binding: RecyclerRowBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        init {
+            binding.recyclerRowText.setOnClickListener {
+                val action = ListFragmentDirections.actionListFragmentToRecipeFragment(
+                    "fromtherecycler",
+                    idList[position]
+                )
+                Navigation.findNavController(it).navigate(action)
+            }
+        }
+
+        fun bind(text: String) {
+            binding.recyclerRowText.text = text
         }
     }
 }
